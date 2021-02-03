@@ -5,6 +5,12 @@ Promise.__index = Promise
 local IsServer = game:FindService("NetworkServer") ~= nil
 local Player = game.Players.LocalPlayer
 
+type task = {
+	desynchronize: () -> any,
+	synchronize: () -> any
+}
+local task: task
+
 if script.Parent:IsA("Actor") then
 	return function(func, ...)
 		local Response
