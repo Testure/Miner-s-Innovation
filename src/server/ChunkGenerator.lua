@@ -29,6 +29,7 @@ function ChunkGenerator:GenerateBlockMap(ChunkX: number, ChunkZ: number, Biome: 
 end
 
 function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, BlockMap: Types.BlockMap, Biome: Types.Biome): boolean
+    task.synchronize()
     local Model = Instance.new("Model")
     Model.Parent = workspace
     Model.Name = "Chunk"..tostring(i)
@@ -39,6 +40,7 @@ function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, Blo
         for z, Y in pairs(Z) do
             for y, Data in pairs(Y) do
                 if Data.Density < 20 then
+                    task.synchronize()
                     local Part = Instance.new("Part")
                     Part.Parent = Model
                     Part.Anchored = true
@@ -47,13 +49,16 @@ function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, Blo
                     Part.TopSurface = Enum.SurfaceType.Smooth
                     Part.BottomSurface = Enum.SurfaceType.Smooth
                     Part.Material = Enum.Material.SmoothPlastic
+                    task.desynchronize()
                 end
             end
         end
     end
     
     for _,v in pairs(Model:GetChildren()) do
+        task.synchronize()
         v.BrickColor = Block.GetTerrainBlockType(v.Position, v)
+        task.desynchronize()
     end
 end
 
