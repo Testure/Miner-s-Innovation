@@ -50,15 +50,13 @@ function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, Blo
                     Part.BottomSurface = Enum.SurfaceType.Smooth
                     Part.Material = Enum.Material.SmoothPlastic
                     task.desynchronize()
+                    local Color = Block.GetTerrainBlockType(BlockMap, x, z, y, Data, Biome)
+                    task.synchronize()
+                    Part.BrickColor = Color
+                    task.desynchronize()
                 end
             end
         end
-    end
-    
-    for _,v in pairs(Model:GetChildren()) do
-        task.synchronize()
-        v.BrickColor = Block.GetTerrainBlockType(v.Position, v)
-        task.desynchronize()
     end
 end
 

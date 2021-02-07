@@ -22,6 +22,7 @@ if script.Parent:IsA("Actor") then
 end
 
 function module.new(func)
+	task.synchronize()
 	local self = setmetatable({}, Promise)
 	self._Func = func
 	self._Actor = Instance.new("Actor")

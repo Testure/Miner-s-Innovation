@@ -8,28 +8,42 @@ function Module.new(Position: Vector3)
     return self
 end
 
-function Module.GetTerrainBlockType(Position: Vector3, Part: Instance): BrickColor
-    local IsTop = true
-    local Params = RaycastParams.new()
-    Params.FilterDescendantsInstances = {Part}
-    Params.FilterType = Enum.RaycastFilterType.Blacklist
-    local Result = workspace:Raycast(Position, Position - Vector3.new(Position.X, Position.Y - (16 * 4), Position.Z), Params)
-    local Dirt = false
-    if Result and Result.Instance then
-        local NewResult = workspace:Raycast(Result.Instance.Position, Result.Instance.Position - Vector3.new(Result.Instance.Position.X, Result.Instance.Position.Y - (2 * 4), Result.Instance.Position.Z))
-        if NewResult and NewResult.Instance and NewResult.Instance.BrickColor ~= BrickColor.new("Shamrock") then
-            IsTop = false
-        else
-            Dirt = true
+function IsSurfaceBlock(BlockMap: Types.BlockMap, x: number, z: number, y: number): (boolean, number?)
+    if y <= 1 then
+        return false, y + 1
+    end
+    for X, Next in pairs(BlockMap) do
+        for Z, NextZ in pairs(Next) do
+            for Y, DataY in pairs(NextZ) do
+                if DataY.Density < 20 then
+                    if X == x and Z == z then
+                        if Y > y then
+                            if Y < (y * 2) then
+                                return false, Y
+                            end
+                        end
+                    end
+                end
+            end
         end
     end
-    --TODO: Change Logic
-    if IsTop then
+    return true, nil
+end
+
+function Module.GetTerrainBlockType(BlockMap: Types.BlockMap, x: number, z: number, y: number, Data: Types.BlockNoise, Biome: Types.Biome): BrickColor
+    local SurfaceBlock, AboveBlock = IsSurfaceBlock(BlockMap, x, z, y)
+    local SubSurfaceBlock = false
+
+    if not SurfaceBlock and AboveBlock then
+        if IsSurfaceBlock(BlockMap, x, z, AboveBlock) then
+            SubSurfaceBlock = true
+        end
+    end
+
+    if SurfaceBlock then
         return BrickColor.new("Shamrock")
-    elseif Dirt and Position.Y >= (3 * 4) then
+    elseif SubSurfaceBlock then
         return BrickColor.new("Brown")
-    elseif Position.Y >= (8 * 4) then
-        return BrickColor.new("Dark stone grey")
     else
         return BrickColor.new("Dark stone grey")
     end
