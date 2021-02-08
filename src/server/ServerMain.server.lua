@@ -3,15 +3,15 @@ local Started = false
 
 local Inject = {}
 
-function Inject.Import(Module: ModuleScript | string): ({}?, boolean)
+function Inject.Import(Module: ModuleScript | string, DoMethods: boolean): ({}?, boolean)
 	if typeof(Module) == "string" then
 		Module = game.ReplicatedStorage.Common:FindFirstChild(Module)
 	end
-	local Success, Table = InitalizeModule(Module)
+	local Success, Table = InitalizeModule(Module, DoMethods)
 	return Table, Success
 end
 
-function InitalizeModule(Module: ModuleScript): (boolean, {}?)
+function InitalizeModule(Module: ModuleScript, DoMethods: boolean?): (boolean, {}?)
 	local ReturnTable: {} = nil
 	local Success: boolean, Error: string? = pcall(function()
 		ReturnTable = require(Module)
@@ -25,7 +25,9 @@ function InitalizeModule(Module: ModuleScript): (boolean, {}?)
 	if Success and not Error then
 		if (ReturnTable["Init"] ~= nil and typeof(ReturnTable["Init"]) == "function") then
 			Success, Error = pcall(function()
-				ReturnTable["Init"](ReturnTable, Modules)
+				if DoMethods then
+					ReturnTable["Init"](ReturnTable, Modules)
+				end
 			end)
 			if not Success and Error then
 				Failed = true
@@ -36,7 +38,9 @@ function InitalizeModule(Module: ModuleScript): (boolean, {}?)
 	end
 	if not Failed and (Started and (ReturnTable["Start"] ~= nil and typeof(ReturnTable["Start"]) == "function")) then
 		Success, Error = pcall(function()
-			ReturnTable["Start"](ReturnTable, Modules)
+			if DoMethods then
+				ReturnTable["Start"](ReturnTable, Modules)
+			end
 		end)
 		if not Success and Error then
 			Failed = true
@@ -51,7 +55,15 @@ end
 
 for _,v in pairs(script.Parent:GetChildren()) do
 	if v:IsA("ModuleScript") then
-		local Success, Module = InitalizeModule(v)
+		local Success, Module = InitalizeModule(v, true)
+		if Success and Module then
+			Modules[v.Name] = Module
+		end
+	end
+end
+for _,v in pairs(game.ReplicatedStorage.Common:GetChildren()) do
+	if v:IsA("ModuleScript") then
+		local Success, Module = InitalizeModule(v, true)
 		if Success and Module then
 			Modules[v.Name] = Module
 		end
@@ -70,5 +82,8 @@ for i,v in pairs(Modules) do
 		warn(string.format("Failed to start module %s!", i))
 		warn(Error)
 	end
+end
+for _,v in pairs(Modules) do
+	v.Modules = Modules
 end
 Started = true

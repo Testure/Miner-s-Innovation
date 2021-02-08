@@ -2,10 +2,55 @@ local Module = {}
 local Block = {}
 Block.__index = Block
 
-function Module.new(Position: Vector3)
+local Types = require(script.Parent.Types)
+
+function Module.new(Position: Vector3, BlockState: number, BlockType: Types.BlockType): Types.Block
     local self = setmetatable({}, Block)
     self._Position = Position
+    self._BlockState = BlockState
+    self._BlockType = BlockType
+    self._Instance = self:_FindInstance()
     return self
+end
+
+function Block:GetPosition(): Vector3
+    return self._Position
+end
+
+function Block:GetBlockState(): number
+    return self._BlockState
+end
+
+function Block:GetBlockType(): Types.BlockType
+    return self._BlockType
+end
+
+function Block:SetBlockState(BlockState: number)
+    self._BlockState = BlockState
+end
+
+function Block:SetBlockType(BlockType: Types.BlockType)
+    self._BlockType = BlockType
+    if self._Instance ~= nil then
+        self._Instance.BrickColor = BlockType:GetColor()
+        self._Instance.Transparency = BlockType:GetTransparency()
+        if BlockType:GetName() == "Air" then
+            self._Instance.CanCollide = false
+        else
+            self._Instance.CanCollide = true
+        end
+    end
+end
+
+function Block:_FindInstance(): Instance?
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart")then
+            if v.Position == self:GetPosition() then
+                return v
+             end
+        end
+    end
+    return nil
 end
 
 function IsSurfaceBlock(BlockMap: Types.BlockMap, x: number, z: number, y: number): (boolean, number?)
@@ -30,7 +75,7 @@ function IsSurfaceBlock(BlockMap: Types.BlockMap, x: number, z: number, y: numbe
     return true, nil
 end
 
-function Module.GetTerrainBlockType(BlockMap: Types.BlockMap, x: number, z: number, y: number, Data: Types.BlockNoise, Biome: Types.Biome): BrickColor
+function Module.GetTerrainBlockType(BlockMap: Types.BlockMap, x: number, z: number, y: number, Data: Types.BlockNoise, Biome: Types.Biome): Types.BlockType
     local SurfaceBlock, AboveBlock = IsSurfaceBlock(BlockMap, x, z, y)
     local SubSurfaceBlock = false
 
@@ -41,11 +86,11 @@ function Module.GetTerrainBlockType(BlockMap: Types.BlockMap, x: number, z: numb
     end
 
     if SurfaceBlock then
-        return BrickColor.new("Shamrock")
+        return Biome.SurfaceBlock
     elseif SubSurfaceBlock then
-        return BrickColor.new("Brown")
+        return Biome.SubSurfaceBlock
     else
-        return BrickColor.new("Dark stone grey")
+        return Biome.UndergroundBlock
     end
 end
 

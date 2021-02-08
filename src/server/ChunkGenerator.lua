@@ -29,17 +29,17 @@ function ChunkGenerator:GenerateBlockMap(ChunkX: number, ChunkZ: number, Biome: 
 end
 
 function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, BlockMap: Types.BlockMap, Biome: Types.Biome): boolean
-    task.synchronize()
     local Model = Instance.new("Model")
     Model.Parent = workspace
     Model.Name = "Chunk"..tostring(i)
 
-    local Block = self.Import("Block")
+    local Block = self.Import("Block", false)
+    local ParallelPromise = self.Import("ParallelPromise", false)
 
-    for x, Z in pairs(BlockMap) do
-        for z, Y in pairs(Z) do
-            for y, Data in pairs(Y) do
-                if Data.Density < 20 then
+    local Promise = ParallelPromise.new(function()
+        for x = 1, 16 do
+            for z = 1, 16 do
+                for y = 1, 48 do
                     task.synchronize()
                     local Part = Instance.new("Part")
                     Part.Parent = Model
@@ -50,13 +50,50 @@ function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, Blo
                     Part.BottomSurface = Enum.SurfaceType.Smooth
                     Part.Material = Enum.Material.SmoothPlastic
                     task.desynchronize()
-                    local Color = Block.GetTerrainBlockType(BlockMap, x, z, y, Data, Biome)
+                    local NewBlock = Block.new(Part.Position, 1, self.Modules.BlockType.new("Air", BrickColor.new("Medium stone grey"), 1))
                     task.synchronize()
-                    Part.BrickColor = Color
+                    NewBlock:SetBlockType(self.Modules.BlockType.new("Air", BrickColor.new("Medium stone grey"), 1))
                     task.desynchronize()
                 end
             end
         end
+    end)
+    spawn(function()
+        task.desynchronize()
+        Promise:RunOnce()
+    end)
+
+    for x, Z in pairs(BlockMap) do
+        local Promise = ParallelPromise.new(function()
+            for z, Y in pairs(Z) do
+                for y, Data in pairs(Y) do
+                    if Data.Density < 20 then
+                        task.synchronize()
+                        local Part = Instance.new("Part")
+                        Part.Parent = Model
+                        Part.Anchored = true
+                        Part.Size = Vector3.new(4, 4, 4)
+                        Part.Position = Vector3.new((XPos + x) * 4, y * 4, (ZPos + z) * 4)
+                        Part.TopSurface = Enum.SurfaceType.Smooth
+                        Part.BottomSurface = Enum.SurfaceType.Smooth
+                        Part.Material = Enum.Material.SmoothPlastic
+                        task.desynchronize()
+                        local NewBlock = Block.new(Part.Position, 1, self.Modules.BlockType.new("Air", BrickColor.new("Medium stone grey"), 1))
+                        task.synchronize()
+                        NewBlock:SetBlockType(self.Modules.BlockType.new("Air", BrickColor.new("Medium stone grey"), 1))
+                        task.desynchronize()
+                        local BlockType = Block.GetTerrainBlockType(BlockMap, x, z, y, Data, Biome)
+                        task.synchronize()
+                        NewBlock:SetBlockType(BlockType)
+                        task.desynchronize()
+                    end
+                end
+            end
+        end)
+        spawn(function()
+            task.desynchronize()
+            --Promise:RunOnce()
+        end)
     end
 end
 
