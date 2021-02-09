@@ -28,7 +28,8 @@ function ChunkGenerator:GenerateBlockMap(ChunkX: number, ChunkZ: number, Biome: 
     return Map
 end
 
-function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, BlockMap: Types.BlockMap, Biome: Types.Biome): boolean
+function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, BlockMap: Types.BlockMap, Biome: Types.Biome, Actor): boolean
+    task.synchronize()
     local Model = Instance.new("Model")
     Model.Parent = workspace
     Model.Name = "Chunk"..tostring(i)
@@ -36,8 +37,8 @@ function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, Blo
     local Block = self.Import("Block", false)
     local ParallelPromise = self.Import("ParallelPromise", false)
 
-    local Promise = ParallelPromise.new(function()
         for x = 1, 16 do
+            local Promise = ParallelPromise.new(function()
             for z = 1, 16 do
                 for y = 1, 48 do
                     task.synchronize()
@@ -56,12 +57,12 @@ function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, Blo
                     task.desynchronize()
                 end
             end
-        end
-    end)
-    spawn(function()
-        task.desynchronize()
-        Promise:RunOnce()
-    end)
+        end)
+        spawn(function()
+            task.desynchronize()
+            Promise:RunOnce()
+        end)
+    end
 
     for x, Z in pairs(BlockMap) do
         local Promise = ParallelPromise.new(function()

@@ -16,8 +16,8 @@ function Chunks:Init(Modules: {{}})
         UndergroundBlock = BlockType.new("Stone", BrickColor.new("Dark stone grey"), 0)
     }
 
-    for x = 1, 4 do
-        for z = 1, 4 do
+    for x = 1, 2 do
+        for z = 1, 2 do
             y += 1
             local BlockMap: Types.BlockMap = Modules.ChunkGenerator:GenerateBlockMap(x * 16, z * 16, Biome)
             self.ChunkMap[y] = {x = x * 16, z = z * 16, Blocks = BlockMap, Biome = Biome}
@@ -26,10 +26,15 @@ function Chunks:Init(Modules: {{}})
     print("ChunkMap generated!")
 
     for i = 1, #self.ChunkMap do
-        --local Promise = ParallelPromise.new(Modules.ChunkGenerator.GenerateChunk)
+        local Actor = Instance.new("Actor")
+        Actor.Parent = game.ServerStorage
+        local Mod = game.ReplicatedStorage.Common.ParallelPromise:Clone()
+        Mod.Parent = Actor
+        local e = require(Mod)
         spawn(function()
-            --Promise:RunOnce(Modules.ChunkGenerator, self.ChunkMap[i].x, self.ChunkMap[i].z, i, self.ChunkMap[i].Blocks, self.ChunkMap[i].Biome)
-            Modules.ChunkGenerator:GenerateChunk(self.ChunkMap[i].x, self.ChunkMap[i].z, i, self.ChunkMap[i].Blocks, self.ChunkMap[i].Biome)
+            task.desynchronize()
+            e(Modules.ChunkGenerator.GenerateChunk, Modules.ChunkGenerator, self.ChunkMap[i].x, self.ChunkMap[i].z, i, self.ChunkMap[i].Blocks, self.ChunkMap[i].Biome, Actor)
+            --Modules.ChunkGenerator:GenerateChunk(self.ChunkMap[i].x, self.ChunkMap[i].z, i, self.ChunkMap[i].Blocks, self.ChunkMap[i].Biome)
         end)
     end
 end
