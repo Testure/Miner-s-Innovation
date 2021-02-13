@@ -11,7 +11,9 @@ export type BlockNoise = {
     XNoise: number,
     YNoise: number,
     ZNoise: number,
-    Density: number
+    Density: number,
+    IsSurfaceBlock: boolean,
+    AboveBlock: number | nil
 }
 export type ChunkMap = {
     [number]: {

@@ -36,47 +36,42 @@ function Block:SetBlockType(BlockType: Types.BlockType)
         self._Instance.Transparency = BlockType:GetTransparency()
         if BlockType:GetName() == "Air" then
             self._Instance.CanCollide = false
+            self._Instance.Transparency = 1
         else
             self._Instance.CanCollide = true
+            self._Instance.Transparency = 0
         end
     end
 end
 
 function Block:_FindInstance(): Instance?
-    for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart")then
-            if v.Position == self:GetPosition() then
-                return v
-             end
+    for _,v in pairs(workspace.Chunks:GetChildren()) do
+        local Part = v:FindFirstChild(string.format("Block %d %d %d", self._Position.X, self._Position.Y, self._Position.Z))
+        if Part ~= nil then
+            return Part
         end
     end
     return nil
 end
 
 function IsSurfaceBlock(BlockMap: Types.BlockMap, x: number, z: number, y: number): (boolean, number?)
-    if y <= 1 then
-        return false, y + 1
-    end
+    local Bool: boolean, Above: number?
     for X, Next in pairs(BlockMap) do
         for Z, NextZ in pairs(Next) do
             for Y, DataY in pairs(NextZ) do
-                if DataY.Density < 20 then
-                    if X == x and Z == z then
-                        if Y > y then
-                            if Y < (y * 2) then
-                                return false, Y
-                            end
-                        end
-                    end
+                if X == x and Z == z and Y == y then
+                    Bool = DataY.IsSurfaceBlock
+                    Above = DataY.AboveBlock
+                    break
                 end
             end
         end
     end
-    return true, nil
+    return Bool, Above
 end
 
 function Module.GetTerrainBlockType(BlockMap: Types.BlockMap, x: number, z: number, y: number, Data: Types.BlockNoise, Biome: Types.Biome): Types.BlockType
-    local SurfaceBlock, AboveBlock = IsSurfaceBlock(BlockMap, x, z, y)
+    local SurfaceBlock, AboveBlock = Data.IsSurfaceBlock, Data.AboveBlock
     local SubSurfaceBlock = false
 
     if not SurfaceBlock and AboveBlock then
