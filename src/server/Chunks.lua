@@ -16,13 +16,13 @@ function Chunks:Init(Modules: {{}})
         UndergroundBlock = BlockType.new("Stone", BrickColor.new("Dark stone grey"), 0)
     }
 
-    for x = 1, 8 do
-        for z = 1, 8 do
+    for x = 1, 4 do
+        for z = 1, 4 do
             local Promise = ParallelPromise.new(function()
                 y += 1
                 local BlockMap: Types.BlockMap = Modules.ChunkGenerator:GenerateBlockMap(x * 16, z * 16, Biome)
                 self.ChunkMap[y] = {x = x * 16, z = z * 16, Blocks = BlockMap, Biome = Biome}
-                return true
+                print("Chunk "..tostring(y).." done")
             end)
             spawn(function()
                 task.desynchronize()
@@ -30,7 +30,7 @@ function Chunks:Init(Modules: {{}})
             end)
         end
     end
-    repeat wait() until y == (8 * 8)
+    repeat wait() until y == (4 * 4)
     print("ChunkMap generated!")
 
     for i = 1, #self.ChunkMap do

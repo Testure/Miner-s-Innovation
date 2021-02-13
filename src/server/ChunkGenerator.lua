@@ -36,6 +36,7 @@ function ChunkGenerator:GenerateBlockMap(ChunkX: number, ChunkZ: number, Biome: 
     local Map: Types.BlockMap = {[1] = {[1] = {[1] = {XNoise = 0, YNoise = 0, ZNoise = 0, Density = 0}}}}
     local Size = 1
     local Perlin = self.Import("Perlin", false)
+    local ParallelPromise = self.Import("ParallelPromise", false)
 
     for x = 1, Size * 16 do
         Map[x] = {}
@@ -48,17 +49,29 @@ function ChunkGenerator:GenerateBlockMap(ChunkX: number, ChunkZ: number, Biome: 
         end
     end
     for x, Z in pairs(Map) do
-        for z, Y in pairs(Z) do
-            for y, Data in pairs(Y) do
-                local bool, above = IsSurfaceBlock(Map, x, z, y)
-                if bool then
-                    Data.IsSurfaceBlock = true
-                    Data.AboveBlock = above
-                else
-                    Data.IsSurfaceBlock = false
-                    Data.AboveBlock = above
+        local Done = false
+        local Promise = ParallelPromise.new(function()
+            for z, Y in pairs(Z) do
+                for y, Data in pairs(Y) do
+                    local bool, above = IsSurfaceBlock(Map, x, z, y)
+                    if bool then
+                        Data.IsSurfaceBlock = true
+                        Data.AboveBlock = above
+                    else
+                        Data.IsSurfaceBlock = false
+                        Data.AboveBlock = above
+                    end
                 end
             end
+            return true
+        end)
+        spawn(function()
+            task.desynchronize()
+            Promise:RunOnce()
+            Done = true
+        end)
+        if x == #Map then
+            repeat wait() until Done
         end
     end
     return Map
@@ -75,7 +88,7 @@ function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, Blo
     local Done = false
 
     for x = 1, 16 do
-        --local Promise = ParallelPromise.new(function()
+        local Promise = ParallelPromise.new(function()
             for z = 1, 16 do
                 for y = 1, 48 do
                     task.synchronize()
@@ -94,12 +107,12 @@ function ChunkGenerator:GenerateChunk(XPos: number, ZPos: number, i: number, Blo
                 end
             end
             Done = true
-            --return true
-        --end)
-        --spawn(function()
-            --task.desynchronize()
-            --Promise:RunOnce()
-        --end)
+            return true
+        end)
+        spawn(function()
+            task.desynchronize()
+            Promise:RunOnce()
+        end)
     end
 
     for x, Z in pairs(BlockMap) do
